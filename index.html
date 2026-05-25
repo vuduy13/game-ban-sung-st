@@ -2,140 +2,98 @@
 <html>
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Free Fire Mini</title>
+<title>Block Blast Mini</title>
 <style>
-body { margin:0; overflow:hidden; background:#111; }
-canvas { display:block; }
-
-.controls {
-  position:fixed;
-  bottom:20px;
-  width:100%;
-  display:flex;
-  justify-content:space-between;
-  padding:0 20px;
-}
-
-.btn {
-  width:80px;
-  height:80px;
-  background:rgba(255,255,255,0.2);
-  border-radius:50%;
-  text-align:center;
-  line-height:80px;
-  color:white;
-  font-size:20px;
-}
+body { margin:0; background:#111; display:flex; justify-content:center; align-items:center; height:100vh; }
+canvas { background:#222; }
 </style>
 </head>
 <body>
 
-<canvas id="game"></canvas>
-
-<div class="controls">
-  <div id="left" class="btn">◀</div>
-  <div id="shoot" class="btn">🔥</div>
-  <div id="right" class="btn">▶</div>
-</div>
+<canvas id="game" width="300" height="400"></canvas>
 
 <script>
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
 
-canvas.width = window.innerWidth;
-canvas.height = window.innerHeight;
+const gridSize = 10;
+const cell = 30;
+let grid = Array(gridSize).fill().map(()=>Array(gridSize).fill(0));
 
-let player = { x:200, y:400, size:20, hp:100 };
-let bullets = [];
-let enemies = [];
-let score = 0;
+let currentBlock = {
+  x: 4,
+  y: 0,
+  shape: [[1,1],[1,1]]
+};
 
-let moveLeft = false;
-let moveRight = false;
+function drawGrid(){
+  for(let y=0;y<gridSize;y++){
+    for(let x=0;x<gridSize;x++){
+      ctx.strokeStyle="#444";
+      ctx.strokeRect(x*cell,y*cell,cell,cell);
 
-// controls
-left.ontouchstart = ()=> moveLeft=true;
-left.ontouchend = ()=> moveLeft=false;
-
-right.ontouchstart = ()=> moveRight=true;
-right.ontouchend = ()=> moveRight=false;
-
-shoot.ontouchstart = shootBullet;
-
-function shootBullet(){
-  bullets.push({ x:player.x, y:player.y });
+      if(grid[y][x]){
+        ctx.fillStyle="cyan";
+        ctx.fillRect(x*cell,y*cell,cell,cell);
+      }
+    }
+  }
 }
 
-// spawn enemy
-setInterval(()=>{
-  enemies.push({
-    x:Math.random()*canvas.width,
-    y:0,
-    size:20,
-    hp:20
+function drawBlock(){
+  ctx.fillStyle="yellow";
+  currentBlock.shape.forEach((row,dy)=>{
+    row.forEach((val,dx)=>{
+      if(val){
+        ctx.fillRect((currentBlock.x+dx)*cell,(currentBlock.y+dy)*cell,cell,cell);
+      }
+    });
   });
-},1000);
+}
 
 function update(){
   ctx.clearRect(0,0,canvas.width,canvas.height);
 
-  // move
-  if(moveLeft) player.x -=5;
-  if(moveRight) player.x +=5;
-
-  // player
-  ctx.fillStyle="white";
-  ctx.fillRect(player.x,player.y,20,20);
-
-  // HP
-  ctx.fillStyle="green";
-  ctx.fillRect(20,20,player.hp*2,10);
-
-  // bullets
-  ctx.fillStyle="yellow";
-  bullets.forEach((b,i)=>{
-    b.y -= 8;
-    ctx.fillRect(b.x,b.y,5,10);
-  });
-
-  // enemies
-  ctx.fillStyle="red";
-  enemies.forEach((e,ei)=>{
-    e.y += 2;
-
-    ctx.fillRect(e.x,e.y,20,20);
-
-    // enemy hit player
-    if(e.y > player.y){
-      player.hp -= 10;
-      enemies.splice(ei,1);
-    }
-
-    // bullet hit enemy
-    bullets.forEach((b,bi)=>{
-      if(b.x > e.x && b.x < e.x+20 && b.y > e.y && b.y < e.y+20){
-        e.hp -=10;
-        bullets.splice(bi,1);
-      }
-    });
-
-    if(e.hp <=0){
-      enemies.splice(ei,1);
-      score++;
-    }
-  });
-
-  // game over
-  if(player.hp <=0){
-    alert("Thua! Score: "+score);
-    location.reload();
-  }
-
-  // score
-  ctx.fillStyle="white";
-  ctx.fillText("Score: "+score,20,60);
+  drawGrid();
+  drawBlock();
 
   requestAnimationFrame(update);
+}
+
+document.addEventListener("click",()=>{
+  currentBlock.y++;
+  if(currentBlock.y > gridSize-2){
+    merge();
+    resetBlock();
+    clearLines();
+  }
+});
+
+function merge(){
+  currentBlock.shape.forEach((row,dy)=>{
+    row.forEach((val,dx)=>{
+      if(val){
+        grid[currentBlock.y+dy][currentBlock.x+dx]=1;
+      }
+    });
+  });
+}
+
+function resetBlock(){
+  currentBlock = {
+    x: Math.floor(Math.random()*8),
+    y: 0,
+    shape: [[1,1],[1,1]]
+  };
+}
+
+function clearLines(){
+  for(let y=0;y<gridSize;y++){
+    if(grid[y].every(cell=>cell)){
+      grid.splice(y,1);
+      grid.unshift(Array(gridSize).fill(0));
+    }
+  }
 }
 
 update();
