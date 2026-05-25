@@ -2,102 +2,216 @@
 <html>
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Block Blast Mini</title>
 <style>
-body { margin:0; background:#111; display:flex; justify-content:center; align-items:center; height:100vh; }
-canvas { background:#222; }
+body { margin:0; background:black; overflow:hidden; }
+canvas { display:block; }
+
+.controls {
+  position:fixed;
+  bottom:20px;
+  width:100%;
+  display:flex;
+  justify-content:space-between;
+  padding:0 20px;
+}
+
+.btn {
+  width:65px;
+  height:65px;
+  background:rgba(255,255,255,0.2);
+  border-radius:50%;
+  text-align:center;
+  line-height:65px;
+  color:white;
+  font-size:18px;
+}
 </style>
 </head>
 <body>
 
-<canvas id="game" width="300" height="400"></canvas>
+<canvas id="game"></canvas>
+
+<div class="controls">
+  <div>
+    <div id="left" class="btn">◀</div>
+    <div id="right" class="btn">▶</div>
+  </div>
+  <div>
+    <div id="jump" class="btn">🦘</div>
+    <div id="fly" class="btn">⚡</div>
+    <div id="attack" class="btn">👊</div>
+    <div id="shoot" class="btn">🔥</div>
+  </div>
+</div>
 
 <script>
-const canvas = document.getElementById("game");
-const ctx = canvas.getContext("2d");
+const c = document.getElementById("game");
+const ctx = c.getContext("2d");
 
-const gridSize = 10;
-const cell = 30;
-let grid = Array(gridSize).fill().map(()=>Array(gridSize).fill(0));
+c.width = innerWidth;
+c.height = innerHeight;
 
-let currentBlock = {
-  x: 4,
-  y: 0,
-  shape: [[1,1],[1,1]]
+// PLAYER
+let player = {
+  x:100,y:300,vy:0,onGround:true,flying:false,
+  hp:100,maxHp:100,level:1,exp:0,power:1,cd:0
 };
 
-function drawGrid(){
-  for(let y=0;y<gridSize;y++){
-    for(let x=0;x<gridSize;x++){
-      ctx.strokeStyle="#444";
-      ctx.strokeRect(x*cell,y*cell,cell,cell);
+// CONTROL
+let keys = {left:false,right:false};
 
-      if(grid[y][x]){
-        ctx.fillStyle="cyan";
-        ctx.fillRect(x*cell,y*cell,cell,cell);
-      }
+left.ontouchstart = ()=> keys.left=true;
+left.ontouchend = ()=> keys.left=false;
+right.ontouchstart = ()=> keys.right=true;
+right.ontouchend = ()=> keys.right=false;
+
+jump.ontouchstart = ()=>{
+  if(player.onGround){ player.vy=-12; player.onGround=false; }
+};
+
+fly.ontouchstart = ()=> player.flying=!player.flying;
+attack.ontouchstart = doAttack;
+shoot.ontouchstart = shootSkill;
+
+// ENEMY + BOSS
+let enemies = [
+  {x:600,y:300,hp:50},
+  {x:900,y:300,hp:50}
+];
+
+let boss = {x:1300,y:300,hp:300,alive:true};
+
+// ITEMS
+let items = [
+  {x:800,y:300,type:"power"}
+];
+
+// SKILL
+let skills = [];
+
+// ATTACK
+function doAttack(){
+  enemies.forEach(e=>{
+    if(Math.abs(player.x - e.x)<60){
+      e.hp -= 10*player.power;
+      gainExp(5);
     }
+  });
+
+  if(Math.abs(player.x - boss.x)<80 && boss.alive){
+    boss.hp -= 8*player.power;
+    gainExp(10);
   }
 }
 
-function drawBlock(){
-  ctx.fillStyle="yellow";
-  currentBlock.shape.forEach((row,dy)=>{
-    row.forEach((val,dx)=>{
-      if(val){
-        ctx.fillRect((currentBlock.x+dx)*cell,(currentBlock.y+dy)*cell,cell,cell);
-      }
-    });
-  });
+// SKILL
+function shootSkill(){
+  if(player.cd<=0){
+    skills.push({x:player.x,y:player.y});
+    player.cd=60;
+  }
 }
 
-function update(){
-  ctx.clearRect(0,0,canvas.width,canvas.height);
+// EXP
+function gainExp(a){
+  player.exp += a;
+  if(player.exp>=50){
+    player.level++;
+    player.exp=0;
+    player.maxHp+=20;
+    player.hp=player.maxHp;
+    player.power+=0.5;
+  }
+}
 
-  drawGrid();
-  drawBlock();
+// UPDATE
+function update(){
+  ctx.clearRect(0,0,c.width,c.height);
+
+  if(player.cd>0) player.cd--;
+
+  // gravity
+  if(!player.flying){
+    player.vy+=0.6;
+    player.y+=player.vy;
+    if(player.y>300){
+      player.y=300;
+      player.vy=0;
+      player.onGround=true;
+    }
+  }
+
+  // move
+  if(keys.left) player.x-=5;
+  if(keys.right) player.x+=5;
+
+  // map scroll
+  let offset = player.x-200;
+
+  // background
+  ctx.fillStyle="#111";
+  ctx.fillRect(0,0,c.width,c.height);
+
+  // player
+  ctx.fillStyle = player.flying?"cyan":"white";
+  ctx.fillRect(player.x-offset,player.y,30,30);
+
+  // enemies
+  enemies.forEach(e=>{
+    if(e.hp>0){
+      ctx.fillStyle="red";
+      ctx.fillRect(e.x-offset,e.y,30,30);
+    }
+  });
+
+  // boss
+  if(boss.hp>0){
+    ctx.fillStyle="purple";
+    ctx.fillRect(boss.x-offset,boss.y,50,50);
+  }
+
+  // items
+  items.forEach((it,i)=>{
+    ctx.fillStyle="yellow";
+    ctx.fillRect(it.x-offset,it.y,15,15);
+
+    if(Math.abs(player.x - it.x)<30){
+      player.power+=1;
+      items.splice(i,1);
+    }
+  });
+
+  // skills
+  skills.forEach((s,i)=>{
+    s.x+=10;
+    ctx.fillStyle="cyan";
+    ctx.fillRect(s.x-offset,s.y,40,10);
+
+    enemies.forEach(e=>{
+      if(s.x>e.x && s.x<e.x+30){
+        e.hp-=20*player.power;
+      }
+    });
+
+    if(boss.hp>0 && s.x>boss.x && s.x<boss.x+50){
+      boss.hp-=15*player.power;
+    }
+
+    if(s.x>player.x+800){
+      skills.splice(i,1);
+    }
+  });
+
+  // UI
+  ctx.fillStyle="white";
+  ctx.fillText("Lv: "+player.level,20,20);
+  ctx.fillText("EXP: "+player.exp+"/50",20,40);
+  ctx.fillText("HP: "+player.hp,20,60);
 
   requestAnimationFrame(update);
 }
 
-document.addEventListener("click",()=>{
-  currentBlock.y++;
-  if(currentBlock.y > gridSize-2){
-    merge();
-    resetBlock();
-    clearLines();
-  }
-});
-
-function merge(){
-  currentBlock.shape.forEach((row,dy)=>{
-    row.forEach((val,dx)=>{
-      if(val){
-        grid[currentBlock.y+dy][currentBlock.x+dx]=1;
-      }
-    });
-  });
-}
-
-function resetBlock(){
-  currentBlock = {
-    x: Math.floor(Math.random()*8),
-    y: 0,
-    shape: [[1,1],[1,1]]
-  };
-}
-
-function clearLines(){
-  for(let y=0;y<gridSize;y++){
-    if(grid[y].every(cell=>cell)){
-      grid.splice(y,1);
-      grid.unshift(Array(gridSize).fill(0));
-    }
-  }
-}
-
 update();
 </script>
-
 </body>
 </html>
