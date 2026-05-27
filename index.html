@@ -1,217 +1,111 @@
 <!DOCTYPE html>
-<html>
+<html lang="vi">
 <head>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<style>
-body { margin:0; background:black; overflow:hidden; }
-canvas { display:block; }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LoTus Shop</title>
 
-.controls {
-  position:fixed;
-  bottom:20px;
-  width:100%;
-  display:flex;
-  justify-content:space-between;
-  padding:0 20px;
-}
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial;
+      background: #0f0f0f;
+      color: white;
+      text-align: center;
+    }
 
-.btn {
-  width:65px;
-  height:65px;
-  background:rgba(255,255,255,0.2);
-  border-radius:50%;
-  text-align:center;
-  line-height:65px;
-  color:white;
-  font-size:18px;
-}
-</style>
+    header {
+      padding: 20px;
+      background: linear-gradient(90deg, black, red);
+      font-size: 24px;
+      font-weight: bold;
+    }
+
+    .container {
+      padding: 20px;
+    }
+
+    .card {
+      background: #1a1a1a;
+      border-radius: 15px;
+      padding: 20px;
+      margin: 15px;
+      display: inline-block;
+      width: 250px;
+      box-shadow: 0 0 15px red;
+      transition: 0.3s;
+    }
+
+    .card:hover {
+      transform: scale(1.05);
+      box-shadow: 0 0 25px red;
+    }
+
+    button {
+      background: red;
+      color: white;
+      border: none;
+      padding: 10px 15px;
+      border-radius: 10px;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+
+    button:hover {
+      background: #ff3333;
+    }
+
+    .contact {
+      margin-top: 30px;
+      font-size: 18px;
+    }
+
+    a {
+      color: red;
+      text-decoration: none;
+    }
+  </style>
 </head>
+
 <body>
 
-<canvas id="game"></canvas>
+<header>
+  🔥 LoTus Shop 🔥
+  <div style="font-size:14px;">Acc Free Fire & Liên Quân</div>
+</header>
 
-<div class="controls">
-  <div>
-    <div id="left" class="btn">◀</div>
-    <div id="right" class="btn">▶</div>
+<div class="container">
+
+  <div class="card">
+    <h2>Acc Free Fire VIP</h2>
+    <p>Giá: 50k - 10tr</p>
+    <button onclick="buy()">Mua ngay</button>
   </div>
-  <div>
-    <div id="jump" class="btn">🦘</div>
-    <div id="fly" class="btn">⚡</div>
-    <div id="attack" class="btn">👊</div>
-    <div id="shoot" class="btn">🔥</div>
+
+  <div class="card">
+    <h2>Acc Liên Quân VIP</h2>
+    <p>Giá: 50k - 10tr</p>
+    <button onclick="buy()">Mua ngay</button>
   </div>
+
+  <div class="card">
+    <h2>Acc Random</h2>
+    <p>Giá rẻ bất ngờ</p>
+    <button onclick="buy()">Mua ngay</button>
+  </div>
+
+</div>
+
+<div class="contact">
+  📱 Liên hệ Zalo: 
+  <a href="https://zalo.me/0896597443">0896597443</a>
 </div>
 
 <script>
-const c = document.getElementById("game");
-const ctx = c.getContext("2d");
-
-c.width = innerWidth;
-c.height = innerHeight;
-
-// PLAYER
-let player = {
-  x:100,y:300,vy:0,onGround:true,flying:false,
-  hp:100,maxHp:100,level:1,exp:0,power:1,cd:0
-};
-
-// CONTROL
-let keys = {left:false,right:false};
-
-left.ontouchstart = ()=> keys.left=true;
-left.ontouchend = ()=> keys.left=false;
-right.ontouchstart = ()=> keys.right=true;
-right.ontouchend = ()=> keys.right=false;
-
-jump.ontouchstart = ()=>{
-  if(player.onGround){ player.vy=-12; player.onGround=false; }
-};
-
-fly.ontouchstart = ()=> player.flying=!player.flying;
-attack.ontouchstart = doAttack;
-shoot.ontouchstart = shootSkill;
-
-// ENEMY + BOSS
-let enemies = [
-  {x:600,y:300,hp:50},
-  {x:900,y:300,hp:50}
-];
-
-let boss = {x:1300,y:300,hp:300,alive:true};
-
-// ITEMS
-let items = [
-  {x:800,y:300,type:"power"}
-];
-
-// SKILL
-let skills = [];
-
-// ATTACK
-function doAttack(){
-  enemies.forEach(e=>{
-    if(Math.abs(player.x - e.x)<60){
-      e.hp -= 10*player.power;
-      gainExp(5);
-    }
-  });
-
-  if(Math.abs(player.x - boss.x)<80 && boss.alive){
-    boss.hp -= 8*player.power;
-    gainExp(10);
-  }
+function buy() {
+  alert("Liên hệ Zalo: 0896597443 để mua acc!");
 }
-
-// SKILL
-function shootSkill(){
-  if(player.cd<=0){
-    skills.push({x:player.x,y:player.y});
-    player.cd=60;
-  }
-}
-
-// EXP
-function gainExp(a){
-  player.exp += a;
-  if(player.exp>=50){
-    player.level++;
-    player.exp=0;
-    player.maxHp+=20;
-    player.hp=player.maxHp;
-    player.power+=0.5;
-  }
-}
-
-// UPDATE
-function update(){
-  ctx.clearRect(0,0,c.width,c.height);
-
-  if(player.cd>0) player.cd--;
-
-  // gravity
-  if(!player.flying){
-    player.vy+=0.6;
-    player.y+=player.vy;
-    if(player.y>300){
-      player.y=300;
-      player.vy=0;
-      player.onGround=true;
-    }
-  }
-
-  // move
-  if(keys.left) player.x-=5;
-  if(keys.right) player.x+=5;
-
-  // map scroll
-  let offset = player.x-200;
-
-  // background
-  ctx.fillStyle="#111";
-  ctx.fillRect(0,0,c.width,c.height);
-
-  // player
-  ctx.fillStyle = player.flying?"cyan":"white";
-  ctx.fillRect(player.x-offset,player.y,30,30);
-
-  // enemies
-  enemies.forEach(e=>{
-    if(e.hp>0){
-      ctx.fillStyle="red";
-      ctx.fillRect(e.x-offset,e.y,30,30);
-    }
-  });
-
-  // boss
-  if(boss.hp>0){
-    ctx.fillStyle="purple";
-    ctx.fillRect(boss.x-offset,boss.y,50,50);
-  }
-
-  // items
-  items.forEach((it,i)=>{
-    ctx.fillStyle="yellow";
-    ctx.fillRect(it.x-offset,it.y,15,15);
-
-    if(Math.abs(player.x - it.x)<30){
-      player.power+=1;
-      items.splice(i,1);
-    }
-  });
-
-  // skills
-  skills.forEach((s,i)=>{
-    s.x+=10;
-    ctx.fillStyle="cyan";
-    ctx.fillRect(s.x-offset,s.y,40,10);
-
-    enemies.forEach(e=>{
-      if(s.x>e.x && s.x<e.x+30){
-        e.hp-=20*player.power;
-      }
-    });
-
-    if(boss.hp>0 && s.x>boss.x && s.x<boss.x+50){
-      boss.hp-=15*player.power;
-    }
-
-    if(s.x>player.x+800){
-      skills.splice(i,1);
-    }
-  });
-
-  // UI
-  ctx.fillStyle="white";
-  ctx.fillText("Lv: "+player.level,20,20);
-  ctx.fillText("EXP: "+player.exp+"/50",20,40);
-  ctx.fillText("HP: "+player.hp,20,60);
-
-  requestAnimationFrame(update);
-}
-
-update();
 </script>
+
 </body>
 </html>
